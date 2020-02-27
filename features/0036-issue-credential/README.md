@@ -1,7 +1,7 @@
-# Aries RFC 0036: Issue Credential Protocol 1.0
+# Aries RFC 0036: Issue Credential Protocol 2.0
 
-- Authors: Nikita Khateev
-- Status: [ACCEPTED](/README.md#accepted)
+- Authors: Nikita Khateev, Stephen Klump
+- Status: [PROPOSED](/README.md#proposed)
 - Since: 2019-05-28
 - Status Note:  See [RFC 0037](../0037-present-proof/README.md) for the presentation part of using credentials.
 - Supersedes: [Indy HIPE PR #89]( https://github.com/hyperledger/indy-hipe/blob/2e85595e9a948a2fbfd58400191d112caff5a14b/text/credential-exchange-message-family/README.md); also [Credential Exchange 0.1 -- IIW 2019](https://hackmd.io/@QNKW9ANJRy6t81D7IfgiZQ/HkklVzww4?type=view)
@@ -13,13 +13,17 @@
 ### 1.1/propose-credential
 
 In version 1.1 of the propose-credential message, the following optional fields were added:
-schema_name, schema_version, and issuer_did.
+schema_name, schema_version, and issuer_did. The previous version is [1.0/propose-credential](https://github.com/hyperledger/aries-rfcs/blob/527849e/features/0036-issue-credential/README.md#propose-credential).
 
-The previous version is [1.0/propose-credential](https://github.com/hyperledger/aries-rfcs/blob/527849e/features/0036-issue-credential/README.md#propose-credential).
+### 2.0/propose-credential and identifiers
+
+Version 2.0 of the propose-credential message replaces the (indy-specific) filtration criteria with a generalized filter attachment. The previous version is [1.1/propose-credential](https://github.com/hyperledger/aries-rfcs/blob/3a1f16e/features/0036-issue-credential/README.md#propose-credential).
+
+Version 2.0 also uses &lt;angle brackets&gt; explicitly to mark all values that may vary between instances, such as identifiers and comments.
 
 ## Summary
 
-Formalizes messages used to issue a credential--whether the credential is JWT-oriented, JSON-LD-oriented, or ZKP-oriented. The general flow is similar, and this protocol intends to handle all of them. If you are using a credential type that doesn't fit this protocol, please [raise a Github issue](/github-issues.md).
+Formalizes messages used to issue a credential -- whether the credential is JWT-oriented, JSON-LD-oriented, or ZKP-oriented. The general flow is similar, and this protocol intends to handle all of them. If you are using a credential type that does not fit this protocol, please [raise a Github issue](/github-issues.md).
 
 ## Motivation
 
@@ -38,6 +42,36 @@ There are two roles in this protocol: Issuer and Holder. Technically, the latter
 The choreography diagrams shown below detail how state evolves in this protocol, in a "happy path."
 
 Errors might occur in various places. For example, an Issuer might offer a credential for a price that the Holder is unwilling to pay. All errors are modeled with a `problem-report` message. Easy-to-anticipate errors reset the flow as shown in the diagrams, and use the code `issuance-abandoned`; more exotic errors (e.g., server crashed at Issuer headquarters in the middle of a workflow) may have different codes but still cause the flow to be abandoned in the same way.
+
+The state table introduces the protocol states; further discussion elaborates.
+
+![State Table](state-table.png)
+
+The Issue Credential protocol defines the following states:
+
+#### null
+
+No credential exchange exists or is in progress.
+
+#### proposed
+
+The Holder has proposed a credential that the Issuer might issue.
+
+#### offered
+
+The Issuer has offered proof of its capacity to issue a credential to the Holder.
+
+#### requested
+
+The Holder has requested a credential from the Issuer.
+
+#### issued
+
+The Issuer has issued a credential to the Holder.
+
+#### acked
+
+The Holder has acknowledged receipt of the credential to the Issuer.
 
 ### Messages
 
@@ -77,22 +111,27 @@ The offer and proposal messages are part of an optional negotiation phase and ma
 
 An optional message sent by the potential Holder to the Issuer to initiate the protocol or in response to a `offer-credential` message when the Holder wants some adjustments made to the credential data offered by Issuer.
 
->Note: In Hyperledger Indy, where the `request-credential` message can **only** be sent in response to an `offer-credential` message, the `propose-credential` message is the only way for a potential Holder to initiate the workflow.
- 
- Schema:
+<blockquote>
+Note: In Hyperledger Indy, where the `request-credential` message can **only** be sent in response to an `offer-credential` message, the `propose-credential` message is the only way for a potential Holder to initiate the workflow.
+</blockquote>
+
+Schema:
 
 ```json
 {
-    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.1/propose-credential",
-    "@id": "<uuid-of-propose-message>",
-    "comment": "some comment",
+    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/2.0/propose-credential",
+    "@id": "<uuid of propose-message>",
+    "comment": "<some comment>",
     "credential_proposal": <json-ld object>,
-    "schema_issuer_did": "DID of the proposed schema issuer",
-    "schema_id": "Schema ID string",
-    "schema_name": "Schema name string",
-    "schema_version": "Schema version string",
-    "cred_def_id": "Credential Definition ID string"
-    "issuer_did": "DID of the proposed issuer"
+    "filter~attach": [
+        {
+            "@id": "<attachment identifier>",
+            "mime-type": "application/json",
+            "data": {
+                "base64": "<bytes for base64>"
+            }
+        }
+    ]
 }
 ```
 
@@ -100,12 +139,14 @@ Description of attributes:
 
 * `comment` -- an optional field that provides human readable information about this Credential Proposal, so the proposal can be evaluated by human judgment. Follows [DIDComm conventions for l10n](../0043-l10n/README.md).
 * `credential_proposal` -- an optional JSON-LD object that represents the credential data that Prover wants to receive. It matches the schema of [Credential Preview](#preview-credential).
-* `schema_issuer_did` -- optional filter to request credential based on a particular Schema issuer DID.
-* `schema_id` -- optional filter to request credential based on a particular Schema. This might be helpful when requesting a version 1 passport instead of a version 2 passport, for example.
-* `schema_name` -- optional filter to request credential based on a schema name. This is useful to allow a more user-friendly experience of requesting a credential by schema name.
-* `schema_version` -- optional filter to request credential based on a schema version. This is useful to allow a more user-friendly experience of requesting a credential by schema name and version.
-* `cred_def_id` -- optional filter to request credential based on a particular Credential Definition. This might be helpful when requesting a commercial driver's license instead of an ordinary driver's license, for example.
-* `issuer_did` -- optional filter to request a credential issued by the owner of a particular DID.
+* `filter~attach` -- an array of attachments that further define the credential being proposed.
+  * For Indy, the attachment includes a base64-encoded JSON object mapping zero or more of the following:
+    * `schema_issuer_did` -- optional filter to request credential based on a particular Schema issuer DID.
+    * `schema_id` -- optional filter to request credential based on a particular Schema. This might be helpful when requesting a version 1 passport instead of a version 2 passport, for example.
+    * `schema_name` -- optional filter to request credential based on a schema name. This is useful to allow a more user-friendly experience of requesting a credential by schema name.
+    * `schema_version` -- optional filter to request credential based on a schema version. This is useful to allow a more user-friendly experience of requesting a credential by schema name and version.
+    * `cred_def_id` -- optional filter to request credential based on a particular Credential Definition. This might be helpful when requesting a commercial driver's license instead of an ordinary driver's license, for example.
+    * `issuer_did` -- optional filter to request a credential issued by the owner of a particular DID.
 
 #### Offer Credential
 
@@ -116,12 +157,12 @@ Schema:
 ```json
 {
     "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential",
-    "@id": "<uuid-of-offer-message>",
-    "comment": "some comment",
+    "@id": "<uuid of offer message>",
+    "comment": "<some comment>",
     "credential_preview": <json-ld object>,
     "offers~attach": [
         {
-            "@id": "libindy-cred-offer-0",
+            "@id": "<attachment identifier>",
             "mime-type": "application/json",
             "data": {
                 "base64": "<bytes for base64>"
@@ -151,11 +192,11 @@ Schema:
 ```json
 {
     "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/request-credential",
-    "@id": "<uuid-of-request-message>",
-    "comment": "some comment",
+    "@id": "<uuid of request message>",
+    "comment": "<some comment>",
     "requests~attach": [
         {
-            "@id": "attachment id",
+            "@id": "<attachment identifier>",
             "mime-type": "application/json",
             "data": {
                 "base64": "<bytes for base64>"
@@ -182,11 +223,11 @@ Schema:
 ```json
 {
     "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/issue-credential",
-    "@id": "<uuid-of-issue-message>",
-    "comment": "some comment",
+    "@id": "<uuid of issue message>",
+    "comment": "<some comment>",
     "credentials~attach": [
         {
-            "@id": "libindy-cred-0",
+            "@id": "<attachment-id>",
             "mime-type": "application/json",
             "data": {
                 "base64": "<bytes for base64>"
@@ -226,7 +267,7 @@ A gist of test value pairs can be found [here](https://gist.github.com/swcurran/
 
 This is not a message but an inner object for other messages in this protocol. It is used construct a preview of the data for the credential that is to be issued. Its schema follows:
 
-```jsonc
+```json
 {
     "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview",
     "attributes": [
