@@ -39,7 +39,7 @@ There are two roles in this protocol: Issuer and Holder. Technically, the latter
 
 ### States
 
-The choreography diagrams shown below detail how state evolves in this protocol, in a "happy path."
+The choreography diagram [below](#choreography-diagram) details how state evolves in this protocol, in a "happy path."
 
 Errors might occur in various places. For example, an Issuer might offer a credential for a price that the Holder is unwilling to pay. All errors are modeled with a `problem-report` message. Easy-to-anticipate errors reset the flow as shown in the diagrams, and use the code `issuance-abandoned`; more exotic errors (e.g., server crashed at Issuer headquarters in the middle of a workflow) may have different codes but still cause the flow to be abandoned in the same way.
 
