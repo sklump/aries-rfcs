@@ -1,6 +1,6 @@
 # Aries RFC 0036: Issue Credential Protocol 2.0
 
-- Authors: Nikita Khateev, Stephen Klump
+- Authors: Nikita Khateev
 - Status: [PROPOSED](/README.md#proposed)
 - Since: 2019-05-28
 - Status Note:  See [RFC 0037](../0037-present-proof/README.md) for the presentation part of using credentials.
