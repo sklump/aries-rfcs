@@ -39,39 +39,27 @@ There are two roles in this protocol: Issuer and Holder. Technically, the latter
 
 ### States
 
-The choreography diagram [below](#choreography-diagram) details how state evolves in this protocol, in a "happy path."
+The choreography diagram [below](#choreography-diagram) details how state evolves in this protocol, in a "happy path." The states include
 
-Errors might occur in various places. For example, an Issuer might offer a credential for a price that the Holder is unwilling to pay. All errors are modeled with a `problem-report` message. Easy-to-anticipate errors reset the flow as shown in the diagrams, and use the code `issuance-abandoned`; more exotic errors (e.g., server crashed at Issuer headquarters in the middle of a workflow) may have different codes but still cause the flow to be abandoned in the same way.
+states for Issuer:
 
-The state table introduces the protocol states; further discussion elaborates.
+* proposal-received
+* offer-sent
+* request-received
+* credential-issued
+* done
 
-![State Table](state-table.png)
+and states for Holder:
 
-The Issue Credential protocol defines the following states:
+* proposal-sent
+* offer-received
+* request-sent
+* credential-received
+* done.
 
-#### null
+Errors might occur in various places. For example, an Issuer might offer a credential for a price that the Holder is unwilling to pay. All errors are modeled with a `problem-report` message. Easy-to-anticipate errors reset the flow as shown in the diagrams, and use the code `issuance-abandoned`; more exotic errors (e.g., server crashed at Issuer headquarters in the middle of a workflow) may have different codes but still cause the flow to be abandoned in the same way. That is, in this version of the protocol, all errors cause the state of both parties (the sender and the receiver of the `problem-report`) to revert to `null` (meaning it is no longer engaged in the protocol at all). Future versions of the protocol may allow more granular choices (e.g., requesting and receiving a (re-)send of the `issue-credential` message if the Holder times out while waiting in the `request-sent` state).
 
-No credential exchange exists or is in progress.
-
-#### proposed
-
-The Holder has proposed a credential that the Issuer might issue.
-
-#### offered
-
-The Issuer has offered proof of its capacity to issue a credential to the Holder.
-
-#### requested
-
-The Holder has requested a credential from the Issuer.
-
-#### issued
-
-The Issuer has issued a credential to the Holder.
-
-#### acked
-
-The Holder has acknowledged receipt of the credential to the Issuer.
+The state table outlines the protocol states and transitions.
 
 ### Messages
 
