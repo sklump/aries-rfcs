@@ -107,7 +107,7 @@ Schema:
 
 ```json
 {
-    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/2.0/propose-credential",
+    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/%VER/propose-credential",
     "@id": "<uuid of propose-message>",
     "comment": "<some comment>",
     "credential_proposal": <json-ld object>,
@@ -127,14 +127,56 @@ Description of attributes:
 
 * `comment` -- an optional field that provides human readable information about this Credential Proposal, so the proposal can be evaluated by human judgment. Follows [DIDComm conventions for l10n](../0043-l10n/README.md).
 * `credential_proposal` -- an optional JSON-LD object that represents the credential data that Prover wants to receive. It matches the schema of [Credential Preview](#preview-credential).
-* `filter~attach` -- an array of attachments that further define the credential being proposed.
-  * For Indy, the attachment includes a base64-encoded JSON object mapping zero or more of the following:
+* `filter~attach` -- an array of zero or more attachments that further define the credential being proposed, to combine disjunctively (logical `or`).
+  * For Hyperledger Indy, each filter attachment includes a base64-encoded JSON object mapping one or more of the following:
     * `schema_issuer_did` -- optional filter to request credential based on a particular Schema issuer DID.
     * `schema_id` -- optional filter to request credential based on a particular Schema. This might be helpful when requesting a version 1 passport instead of a version 2 passport, for example.
     * `schema_name` -- optional filter to request credential based on a schema name. This is useful to allow a more user-friendly experience of requesting a credential by schema name.
     * `schema_version` -- optional filter to request credential based on a schema version. This is useful to allow a more user-friendly experience of requesting a credential by schema name and version.
     * `cred_def_id` -- optional filter to request credential based on a particular Credential Definition. This might be helpful when requesting a commercial driver's license instead of an ordinary driver's license, for example.
     * `issuer_did` -- optional filter to request a credential issued by the owner of a particular DID.
+
+For example, consider a proposal to acquire an Indy-based credential for "gold" or "diamond" level membership; e.g., filter
+
+```json
+{
+    "schema_issuer_did": "WgWxqztrNooG92RXvxSTWv",
+    "issuer_did": "LjgpST2rjsoxYegQDRm7EL",
+    "schema_name": "gold"
+}
+```
+which can base64-encode to "eyJzY2hlbWFfaXNzdWVyX2RpZCI6IldnV3hxenRyTm9vRzkyUlh2eFNUV3YiLCJpc3N1ZXJfZGlkIjoiTGpncFNUMnJqc294WWVnUURSbTdFTCIsInNjaGVtYV9uYW1lIjoiZ29sZCJ9", or filter
+
+```json
+{
+    "schema_issuer_did": "WgWxqztrNooG92RXvxSTWv",
+    "issuer_did": "LjgpST2rjsoxYegQDRm7EL",
+    "schema_name": "diamond"
+}
+```
+
+which can base64-encode to "eyJzY2hlbWFfaXNzdWVyX2RpZCI6IldnV3hxenRyTm9vRzkyUlh2eFNUV3YiLCJpc3N1ZXJfZGlkIjoiTGpncFNUMnJqc294WWVnUURSbTdFTCIsInNjaGVtYV9uYW1lIjoiZGlhbW9uZCJ9". A corresponding filter attachment could appear as:
+
+```
+[
+    {
+        "@id": "0",
+        "mime-type": "application/json",
+        "data": {
+            "base64": "eyJzY2hlbWFfaXNzdWVyX2RpZCI6IldnV3hxenRyTm9vRzkyUlh2eFNUV3YiLCJpc3N1ZXJfZGlkIjoiTGpncFNUMnJqc294WWVnUURSbTdFTCIsInNjaGVtYV9uYW1lIjoiZ29sZCJ9"
+        }
+    },
+    {
+        "@id": "1",
+        "mime-type": "application/json",
+        "data": {
+            "base64": "eyJzY2hlbWFfaXNzdWVyX2RpZCI6IldnV3hxenRyTm9vRzkyUlh2eFNUV3YiLCJpc3N1ZXJfZGlkIjoiTGpncFNUMnJqc294WWVnUURSbTdFTCIsInNjaGVtYV9uYW1lIjoiZGlhbW9uZCJ9"
+        }
+    }
+]
+```
+
+and the Issuer could issue against current credential definitions matching either to satisfy the credential proposal.
 
 #### Offer Credential
 
@@ -144,7 +186,7 @@ Schema:
 
 ```json
 {
-    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential",
+    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/%VER/offer-credential",
     "@id": "<uuid of offer message>",
     "comment": "<some comment>",
     "credential_preview": <json-ld object>,
@@ -165,7 +207,7 @@ Description of fields:
 * `comment` -- an optional field that provides human readable information about this Credential Offer, so the offer can be evaluated by human judgment. Follows [DIDComm conventions for l10n](../0043-l10n/README.md).
 * `credential_preview` -- a JSON-LD object that represents the credential data that Issuer is willing to issue. It matches the schema of [Credential Preview](#preview-credential);
 * `offers~attach` -- an array of attachments that further define the credential being offered. This might be used to clarify which formats or format versions will be issued.
-  * For Indy, the attachment includes a nonce and key correctness proof to facilitate integrity checks. It is a base64-encoded version of the data returned from [`indy_issuer_create_credential_offer()`](https://github.com/hyperledger/indy-sdk/blob/57dcdae74164d1c7aa06f2cccecaae121cefac25/libindy/src/api/anoncreds.rs#L280).
+  * For Hyperledger Indy, the attachment includes a nonce and key correctness proof to facilitate integrity checks. It is a base64-encoded version of the data returned from [`indy_issuer_create_credential_offer()`](https://github.com/hyperledger/indy-sdk/blob/57dcdae74164d1c7aa06f2cccecaae121cefac25/libindy/src/api/anoncreds.rs#L280).
 
 The Issuer may add a [`~payment-request` decorator](../0075-payment-decorators/README.md#payment_request) to this message to convey the need for payment before issuance. See the [payment section below](#payments-during-credential-exchange) for more details.
 
@@ -179,7 +221,7 @@ Schema:
 
 ```json
 {
-    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/request-credential",
+    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/%VER/request-credential",
     "@id": "<uuid of request message>",
     "comment": "<some comment>",
     "requests~attach": [
@@ -198,7 +240,7 @@ Description of Fields:
 
 * `comment` -- an optional field that provides human readable information about this Credential Request, so it can be evaluated by human judgment. Follows [DIDComm conventions for l10n](../0043-l10n/README.md).
 * `requests~attach` -- an array of [attachments](../../concepts/0017-attachments/README.md) defining the requested formats for the credential.
-  * For Indy, the attachment is a base64-encoded version of the data returned from [`indy_prover_create_credential_req()`](https://github.com/hyperledger/indy-sdk/blob/57dcdae74164d1c7aa06f2cccecaae121cefac25/libindy/src/api/anoncreds.rs#L658).
+  * For Hyperledger Indy, the attachment is a base64-encoded version of the data returned from [`indy_prover_create_credential_req()`](https://github.com/hyperledger/indy-sdk/blob/57dcdae74164d1c7aa06f2cccecaae121cefac25/libindy/src/api/anoncreds.rs#L658).
 
 This message may have a [`~payment-receipt` decorator](../0075-payment-decorators/README.md#payment_receipt) to prove to the Issuer that the potential Holder has satisfied a payment requirement. See the [payment section below](#payments-during-credential-exchange).
 
@@ -210,7 +252,7 @@ Schema:
 
 ```json
 {
-    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/issue-credential",
+    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/%VER/issue-credential",
     "@id": "<uuid of issue message>",
     "comment": "<some comment>",
     "credentials~attach": [
@@ -229,7 +271,7 @@ Description of fields:
 
 * `comment` -- an optional field that provides human readable information about the issued credential, so it can be evaluated by human judgment. Follows [DIDComm conventions for l10n](../0043-l10n/README.md).
 * `credentials~attach` -- an array of attachments containing the issued credentials.
-  * For Indy, the attachment contains data from libindy about credential to be issued, base64-encoded, as returned from `libindy`. For more information see the [Libindy API](https://github.com/hyperledger/indy-sdk/blob/57dcdae74164d1c7aa06f2cccecaae121cefac25/libindy/src/api/anoncreds.rs#L338).
+  * For Hyperledger Indy, the attachment contains data from libindy about credential to be issued, base64-encoded, as returned from `libindy`. For more information see the [Libindy API](https://github.com/hyperledger/indy-sdk/blob/57dcdae74164d1c7aa06f2cccecaae121cefac25/libindy/src/api/anoncreds.rs#L338).
   
 If the issuer wants an acknowledgement that the issued credential was accepted, this message must be decorated with `~please-ack`, and it is then best practice for the new Holder to respond with an explicit `ack` message as described in [0317: Please ACK Decorator](../0317-please-ack/README.md).
 
@@ -257,7 +299,7 @@ This is not a message but an inner object for other messages in this protocol. I
 
 ```json
 {
-    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/credential-preview",
+    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/%VER/credential-preview",
     "attributes": [
         {
             "name": "<attribute name>",
